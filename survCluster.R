@@ -47,17 +47,16 @@ rm(list=c("surv.t", "surv.e"))
 }
 
 
-#survCluster<-function( e, surv, sizelim=c(10,100), corlim=0.6, pvlim=0.05, cvfold=10 ){
+survCluster<-function( e, e.surv, sizelim=c(10,100), corlim=0.6, pvlim=0.05, cvfold=10, cancertype="" ){
 
-	sizelim=c(10,100) 
-	corlim=0.6
-	pvlim=5e-4
-	cvfold=10
-
-	e=e.exp
+	#sizelim=c(10,100) 
+	#corlim=0.6
+	#pvlim=5e-4
+	#cvfold=10
+	#e=e.exp
 	survData= Surv(e.surv[,1], e.surv[,2])
 
-.notrun<-function(){
+		#.notrun<-function(){	#For debugging
 	e.coeff = rep(NA, nrow(e))
 	e.pval  = rep(NA, nrow(e))
 	names(e.coeff)=rownames(e)
@@ -68,8 +67,9 @@ rm(list=c("surv.t", "surv.e"))
 	prgbar = txtProgressBar(style = 3)
 	for( i in 1:nrow(e) )
 	{	
-		e.vec<-cbind(t(e[i,]), e.surv[,1], e.surv[,2] ) 
-		colnames(e.vec)=c("signature","time","status")
+
+		e.vec<-cbind(signature=e[i,], time=e.surv[,1],status= e.surv[,2] )
+
 		e.vec<-data.frame( e.vec )
 		
 		cox.summary=summary(coxph(Surv(e.vec[,"time"], e.vec[,"status"]) ~ signature, e.vec ))	
@@ -82,10 +82,8 @@ rm(list=c("surv.t", "surv.e"))
         
 	}
 	cat("\nDONE\n"   )
-}
+		#}
 
-
-	
 	cv.signature.member=list()
 	
 	cv<-cvList( ncol(e) ,cvfold  )
@@ -105,6 +103,7 @@ rm(list=c("surv.t", "surv.e"))
 	cat("Build distance matrix...")
 	e.pos.dist =  1 - cor(  t(e.pos[, cv[[cv.itr]]$train ] )  )   #dist() is for eucledian
 	e.neg.dist =  1 - cor(  t(e.neg[, cv[[cv.itr]]$train ] )  )  
+
 	#e.neg.dist = dist(e.neg,upper = TRUE,diag = TRUE) 
 	cat("DONE\n"   )
 
@@ -150,19 +149,40 @@ rm(list=c("surv.t", "surv.e"))
 	#e.signature=data.frame( t(e.pos.signature) )
 
 	upper = terms(survData[ cv[[cv.itr]]$train ]~(.), data = e.signature)
-	model.aic = step(coxph(survData[ cv[[cv.itr]]$train ] ~(.), data=e.signature), scope=upper, direction="both", k=2) #, trace=FALSE
-	
+	model.aic = try( step(coxph(survData[ cv[[cv.itr]]$train ] ~(.), data=e.signature), scope=upper, direction="both", k=2),  silent = TRUE ) #, trace=FALSE	
+	print(model.aic)
 
+	#if(exists("model.aic")==TRUE)
+	#if(!is.null(model.aic) )
+	if(model.aic[1]!=
+	"Error in fitter(X, Y, strats, offset, init, control, weights = weights,  : \n  NA/NaN/Inf in foreign function call (arg 6)\n") 
 	cv.signature.member[[cv.itr]]=e.signature.member[attr(model.aic$terms, "term.labels")]
 	
 	}#end of crossvalidation runs
 
 	print(sort(table(unlist(cv.signature.member)),decreasing=TRUE)   )
-	save(cv.signature.member,file="KIRC.han.cv.signature.rda")
+	save(cv.signature.member,file=paste(cancertype, ".cv.signature.rda", sep="") )
 
-#}
-
-#survCluster(e.exp, e.surv)
+}
 
 
+
+
+
+
+.notrun<-function(){
+
+
+	load("panCan12v47.5.notintersect.rda")
+	for(i in 1:12){
+		cat("Running", synObjList.f[[i]]$type ,"\n")
+		sampleNames=intersect( colnames(synObjList.f[[i]]$e), rownames(synObjList.f[[i]]$sur ) )
+		
+		survCluster(	synObjList.f[[i]]$e[, sampleNames], 
+				synObjList.f[[i]]$sur[sampleNames, ], 
+				cancertype=synObjList.f[[i]]$type  )
+	}
+	ls()
+
+}
 
