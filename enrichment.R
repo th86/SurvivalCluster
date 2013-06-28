@@ -4,7 +4,6 @@
 # Author: Tai-Hsien Ou Yang
 ###############################################################################
 
-load("KIRC.han.cv.signature.rda")
 load("allattractome.new.rda")
 
 
@@ -52,11 +51,25 @@ enrichmentCompute<-function(  signature.List  ,attractome , probeSize=20530 ){
 		pval[i]=fisher.test( k, n, K, N)
 	}
 	
+
 	print(n)
+	
 	
 	return(pval)
 }
 
 
-enrichmentCompute(cv.signature.member, allattractome        ) 
+load("panCan12v47.probenum.rda")
 
+pvalList=matrix(NA,12,10)
+
+
+#colnames(pvalList) = names(enrichmentCompute(cv.signature.member, allattractome, probeSize=N[1]   )     )
+#rownames(pvalList) = names(N)
+
+
+for(i in 1:12){
+	load(  paste("./tcga_result/", names(N)[i], ".cv.signature.rda",sep="")     )
+	pvalList[i,]=enrichmentCompute(cv.signature.member, allattractome, probeSize=N[i]   ) 
+	
+	}

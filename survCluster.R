@@ -122,29 +122,40 @@ survCluster<-function( e, e.surv, sizelim=c(10,100), corlim=0.6, pvlim=0.05, cvf
 
 	#Calculate signatures
 	cat("Compute signatures...")
-	e.pos.signature = matrix(NA, length(e.pos.candidate.clusters), length(cv[[cv.itr]]$train) )
-	e.pos.signature.names = rep(NA, length(e.pos.candidate.clusters))
-	e.signature.member=list()
-	for(k in 1:length(e.pos.candidate.clusters) ){
-		cluster.member = names(e.pos.tree.cut[which(e.pos.tree.cut==e.pos.candidate.clusters[k])])
-		e.pos.signature[k , ] = colSums(e[cluster.member, cv[[cv.itr]]$train ])/length( cluster.member )
-		e.pos.signature.names[k] = cluster.member[1]
-		e.signature.member[[ cluster.member[1] ]]= cluster.member
-	}
+
+	if(length(e.pos.candidate.clusters)>0 ){
+		e.pos.signature = matrix(NA, length(e.pos.candidate.clusters), length(cv[[cv.itr]]$train) )
+		e.pos.signature.names = rep(NA, length(e.pos.candidate.clusters))
+		e.signature.member=list()
+		for(k in 1:length(e.pos.candidate.clusters) ){
+			cluster.member = names(e.pos.tree.cut[which(e.pos.tree.cut==e.pos.candidate.clusters[k])])
+			e.pos.signature[k , ] = colSums(e[cluster.member, cv[[cv.itr]]$train ])/length( cluster.member )
+			e.pos.signature.names[k] = cluster.member[1]
+			e.signature.member[[ cluster.member[1] ]]= cluster.member
+		}
 		rownames(e.pos.signature)=e.pos.signature.names
-
-	e.neg.signature = matrix(NA, length(e.neg.candidate.clusters), length(cv[[cv.itr]]$train) )
-	e.neg.signature.names = rep(NA, length(e.neg.candidate.clusters))
-	
-	for(k in 1:length(e.neg.candidate.clusters) ){
-		cluster.member = names(e.neg.tree.cut[which(e.neg.tree.cut==e.neg.candidate.clusters[k])])
-		e.neg.signature[k , ] = colSums(e[cluster.member, cv[[cv.itr]]$train ])/length( cluster.member )
-		e.neg.signature.names[k] = cluster.member[1] 
-		e.signature.member[[ cluster.member[1] ]]= cluster.member
 	}
-		rownames(e.neg.signature)=e.neg.signature.names
 
-	e.signature = data.frame( t(rbind(e.pos.signature ,  e.neg.signature) ) )
+
+	if(length(e.neg.candidate.clusters)>0 ){
+		e.neg.signature = matrix(NA, length(e.neg.candidate.clusters), length(cv[[cv.itr]]$train) )
+		e.neg.signature.names = rep(NA, length(e.neg.candidate.clusters))
+	
+		for(k in 1:length(e.neg.candidate.clusters) ){
+			cluster.member = names(e.neg.tree.cut[which(e.neg.tree.cut==e.neg.candidate.clusters[k])])
+			e.neg.signature[k , ] = colSums(e[cluster.member, cv[[cv.itr]]$train ])/length( cluster.member )
+			e.neg.signature.names[k] = cluster.member[1] 
+			e.signature.member[[ cluster.member[1] ]]= cluster.member
+		}
+		rownames(e.neg.signature)=e.neg.signature.names
+		e.signature = data.frame( t(rbind(e.pos.signature ,  e.neg.signature) ) )
+	}else{
+		e.signature = data.frame(t(e.pos.signature))
+			
+		}
+
+
+	
 
 	#e.signature=data.frame( t(e.pos.signature) )
 
@@ -175,12 +186,13 @@ survCluster<-function( e, e.surv, sizelim=c(10,100), corlim=0.6, pvlim=0.05, cvf
 
 	load("panCan12v47.5.notintersect.rda")
 	for(i in 1:12){
+		
 		cat("Running", synObjList.f[[i]]$type ,"\n")
 		sampleNames=intersect( colnames(synObjList.f[[i]]$e), rownames(synObjList.f[[i]]$sur ) )
 		
 		survCluster(	synObjList.f[[i]]$e[, sampleNames], 
 				synObjList.f[[i]]$sur[sampleNames, ], 
-				cancertype=synObjList.f[[i]]$type  )
+				cancertype=synObjList.f[[i]]$type, pvlim=1e-4   )
 	}
 	ls()
 
